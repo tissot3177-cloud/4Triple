@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>4Tuples</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --red: #E63946;
+    --blue: #457B9D;
+    --green: #2D9B4A;
+    --yellow: #F4A261;
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --accent: #e2b96f;
+    --card-bg: #1e1e3a;
+    --card-border: #3a3a5c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ── SPLASH ── */
+  #splash {
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, #0f3460 0%, #1a1a2e 60%);
+    gap: 24px;
+  }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 72px; letter-spacing: 6px; color: var(--accent); line-height: 1; }
+  .logo span { color: #fff; }
+  .tagline { color: var(--muted); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+  .card-demo { display: flex; gap: 6px; }
+  .card-demo .card { width: 48px; height: 48px; border-radius: 7px; }
+  .card-demo .card svg { width: 32px; height: 32px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 2px; font-size: 20px;
+    padding: 14px 40px; border: none; border-radius: 8px;
+    cursor: pointer; touch-action: manipulation;
+    transition: transform .15s, opacity .15s;
+  }
+  .btn:active { transform: scale(.96); opacity: .85; }
+  .btn-primary  { background: var(--accent); color: #1a1a2e; }
+  .btn-secondary { background: transparent; border: 2px solid var(--card-border); color: var(--text); font-size: 16px; padding: 12px 28px; }
+  .btn-sm { font-size: 15px; padding: 10px 20px; letter-spacing: 1px; }
+  .btn-full { width: 100%; padding: 18px; font-size: 22px; }
+  .btn-next { background: var(--accent); color: #1a1a2e; width: 100%; padding: 20px; font-size: 26px; border-radius: 10px; border: none; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; cursor: pointer; touch-action: manipulation; }
+  .btn-next:active { opacity: .85; transform: scale(.97); }
+
+  /* ── CARDS ── */
+  .card {
+    width: 56px; height: 56px; border-radius: 8px;
+    border: 2px solid var(--card-border); background: var(--card-bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; position: relative;
+    touch-action: manipulation; user-select: none;
+    transition: transform .15s, border-color .2s, box-shadow .2s;
+  }
+  .card:active { transform: scale(.93); }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); transform: translateY(-4px); }
+  .card.board-card { width: 48px; height: 48px; border-radius: 6px; cursor: default; }
+  .card.board-card:active { transform: none; }
+  .card.joker-card { border-color: var(--accent); background: #2a2a1e; }
+  .card svg { width: 38px; height: 38px; pointer-events: none; }
+  .card.board-card svg { width: 32px; height: 32px; }
+
+  .hand {
+    display: flex; gap: 8px; justify-content: center;
+    padding: 6px 0; flex-wrap: wrap;
+    min-height: 72px; align-items: center;
+  }
+  .hand-hidden {
+    display: flex; gap: 8px; justify-content: center;
+    padding: 6px 0; min-height: 72px; align-items: center;
+  }
+  .card-back {
+    width: 56px; height: 56px; border-radius: 8px; flex-shrink: 0;
+    border: 2px solid var(--card-border);
+    background: repeating-linear-gradient(135deg,#1e1e3a,#1e1e3a 6px,#252548 6px,#252548 12px);
+  }
+
+  /* ── GAME ── */
+  #game { background: var(--bg); }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px 6px; background: var(--surface);
+    flex-shrink: 0; border-bottom: 1px solid var(--card-border);
+  }
+  .scores { display: flex; gap: 16px; }
+  .score-item { display: flex; flex-direction: column; align-items: center; }
+  .score-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .score-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--muted); line-height: 1; }
+  .score-item.active-player .score-label { color: var(--accent); }
+  .score-item.active-player .score-val   { color: #fff; }
+  .deck-info { display: flex; flex-direction: column; align-items: center; }
+  .deck-count { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--muted); }
+  .deck-text  { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .board-wrap {
+    flex: 1; overflow: auto; position: relative;
+    background: radial-gradient(ellipse at center, #1a1e3a 0%, #111124 100%);
+  }
+  .board { position: absolute; display: grid; }
+  .board-cell {
+    width: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .drop-target {
+    width: 44px; height: 44px; border: 2px dashed rgba(255,255,255,.15);
+    border-radius: 8px; cursor: pointer; touch-action: manipulation;
+    transition: border-color .2s, background .2s;
+  }
+  .drop-target:active { border-color: var(--accent); background: rgba(226,185,111,.1); }
+
+  .bottom-panel {
+    background: var(--surface); border-top: 1px solid var(--card-border);
+    padding: 8px 12px 14px; flex-shrink: 0;
+  }
+  .turn-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+  }
+  .turn-label { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: var(--accent); }
+  .hint { font-size: 11px; color: var(--muted); }
+  .action-row { display: flex; gap: 6px; margin-top: 6px; }
+  .action-row .btn { flex: 1; font-size: 15px; padding: 11px 8px; }
+  .msg-bar { text-align: center; font-size: 12px; color: var(--muted); min-height: 16px; padding: 1px 0 3px; }
+  .msg-bar.error { color: var(--red); }
+  .pass-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+
+  .rm-btn {
+    position: absolute; top: -6px; right: -6px;
+    width: 18px; height: 18px; background: var(--red); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; cursor: pointer; z-index: 10; line-height: 1;
+  }
+
+  /* ── END ── */
+  #endscreen {
+    align-items: center; justify-content: center; gap: 18px;
+    background: radial-gradient(ellipse at 50% 30%, #0f3460 0%, #0a0a14 70%);
+  }
+  .end-title { font-family: 'Bebas Neue', sans-serif; font-size: 56px; letter-spacing: 4px; color: var(--accent); }
+  .final-scores { display: flex; gap: 20px; }
+  .final-score-item { background: var(--surface); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 28px; text-align: center; }
+  .final-score-item.winner { border-color: var(--accent); background: rgba(226,185,111,.1); }
+  .final-score-item .name { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .final-score-item .pts  { font-family: 'Bebas Neue', sans-serif; font-size: 52px; color: var(--text); line-height: 1; }
+  .final-score-item.winner .pts { color: var(--accent); }
+  .crown { font-size: 28px; }
+  .winner-msg { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px; color: var(--accent); }
+
+  .btn-restart {
+    font-size: 22px; line-height: 1;
+    background: transparent; border: 2px solid var(--card-border);
+    color: var(--muted); border-radius: 8px;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; touch-action: manipulation;
+    transition: border-color .15s, color .15s, transform .15s;
+  }
+  .btn-restart:active { border-color: var(--accent); color: var(--accent); transform: rotate(-30deg); }
+
+  /* ── PLAYER SELECT ── */
+  #playerselect {
+    align-items: center; justify-content: center; gap: 28px;
+    background: radial-gradient(ellipse at 30% 20%, #0f3460 0%, #1a1a2e 60%);
+  }
+  .player-btns { display: flex; gap: 14px; }
+  .btn-player {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; letter-spacing: 2px;
+    width: 72px; height: 72px;
+    border-radius: 14px; border: 2px solid var(--card-border);
+    background: var(--surface); color: var(--text);
+    cursor: pointer; touch-action: manipulation;
+    transition: border-color .15s, background .15s, transform .15s;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .btn-player:active { border-color: var(--accent); background: rgba(226,185,111,.15); transform: scale(.93); }
+
+  /* Compact scores for 3-4 players */
+  .scores { gap: 10px; }
+  .score-item .score-label { font-size: 9px; }
+  .score-item .score-val   { font-size: 22px; }
+
+  .board-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+  .board-wrap::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" class="screen active">
+  <div class="logo"><span>4</span>Tuples</div>
+  <div class="tagline">The game of rows &amp; tuples</div>
+  <div class="card-demo" id="splashDemo"></div>
+  <div style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:12px">
+    <button class="btn btn-primary" onclick="showScreen('playerselect')">New Game</button>
+    <button class="btn btn-secondary btn-sm" onclick="showRules()">Rules</button>
+  </div>
+</div>
+
+<!-- PLAYER SELECT -->
+<div id="playerselect" class="screen">
+  <div class="logo" style="font-size:52px"><span>4</span>Tuples</div>
+  <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">How many players?</div>
+  <div class="player-btns">
+    <button class="btn btn-player" onclick="startGame(1)">1</button>
+    <button class="btn btn-player" onclick="startGame(2)">2</button>
+    <button class="btn btn-player" onclick="startGame(3)">3</button>
+    <button class="btn btn-player" onclick="startGame(4)">4</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div class="top-bar">
+    <div class="scores" id="scoresBar"></div>
+    <div class="deck-info">
+      <div class="deck-count" id="deckCount">-</div>
+      <div class="deck-text">cards left</div>
+    </div>
+    <button class="btn-restart" onclick="showScreen('playerselect')" title="New Game">↺</button>
+  </div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="bottom-panel">
+    <div class="turn-header">
+      <div class="turn-label" id="turnLabel">Player 1's Turn</div>
+      <div class="hint" id="turnHint">Tap a card, then tap the board</div>
+    </div>
+    <div class="msg-bar" id="msgBar"></div>
+
+    <!-- Normal play -->
+    <div id="modePlay">
+      <div class="hand" id="handArea"></div>
+      <div class="action-row">
+        <button class="btn btn-secondary" onclick="doPass()">Pass / Swap</button>
+        <button class="btn btn-primary" id="playBtn" onclick="confirmPlay()" disabled>Play</button>
+      </div>
+    </div>
+
+    <!-- Pass/swap -->
+    <div id="modeSwap" style="display:none">
+      <div class="pass-label">Tap cards to swap back, then confirm</div>
+      <div class="hand" id="swapHand"></div>
+      <div style="margin-top:6px">
+        <button class="btn btn-primary btn-full" id="swapBtn" onclick="confirmPass()">Confirm Pass</button>
+      </div>
+    </div>
+
+    <!-- Cards hidden — waiting for next player -->
+    <div id="modeNext" style="display:none">
+      <div class="hand-hidden" id="hiddenPlaceholder"></div>
+      <button class="btn-next" onclick="nextPlayer()">Next Player →</button>
+    </div>
+  </div>
+</div>
+
+<!-- END -->
+<div id="endscreen" class="screen">
+  <div class="end-title">Game Over</div>
+  <div class="final-scores" id="finalScores"></div>
+  <div class="winner-msg" id="winnerMsg"></div>
+  <button class="btn btn-primary" style="margin-top:8px" onclick="showScreen('playerselect')">Play Again</button>
+</div>
+
+<script>
+const COLORS  = ['red','blue','green','yellow'];
+const SHAPES  = ['fire','water','earth','air'];
+const NUMBERS = [1,2,3,4];
+// Colors encoded per-shape in palette arrays
+
+// ── DOT POSITIONS (Option D — bottom strip) ──
+const DOT_POS = {
+  1: [[24,44]],
+  2: [[18,44],[30,44]],
+  3: [[14,44],[24,44],[34,44]],
+  4: [[12,44],[20,44],[28,44],[36,44]]
+};
+function dots(n) {
+  return (DOT_POS[n]||[]).map(([x,y])=>
+    `<circle cx="${x}" cy="${y}" r="3.2" fill="#fff" opacity=".90"/>`
+  ).join('');
+}
+
+// ── CARD BACKGROUNDS & BORDERS PER COLOR ──
+const COLOR_BG     = { red:'#221018', blue:'#101822', green:'#101e12', yellow:'#201a0a' };
+const COLOR_BORDER = { red:'#4a1520', blue:'#102040', green:'#124020', yellow:'#403010' };
+
+// ── SHAPE SVGs ──
+function fireSVG(n, color) {
+  const palettes = {
+    red:    ['#2a0a0a','#6a1010','#b82020','#e05050','#ffa0a0'],
+    blue:   ['#0a1f30','#0e4272','#1a72b8','#3aaee0','#a0e8ff'],
+    green:  ['#0a2a12','#0f4a20','#1a7a35','#2db84e','#a0ffb8'],
+    yellow: ['#4a3200','#8a5e00','#d49000','#f8c830','#fff4a0'],
+  };
+  const [c1,c2,c3,c4,c5] = palettes[color]||palettes.red;
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <path d="M26,2 C28,7 35,9 33,17 C37,12 38,7 35,4 C42,11 43,21 38,28 C42,25 43,20 41,16
+      C46,23 45,33 39,39 C35,44 30,47 24,47 C18,47 12,44 8,39 C2,33 2,23 7,16
+      C5,20 6,25 10,28 C5,21 6,11 13,4 C10,7 11,12 15,17 C13,9 20,7 22,2
+      C21,8 17,14 20,20 C18,15 22,10 26,2 Z" fill="${c1}"/>
+    <path d="M25,7 C27,11 32,13 30,20 C34,16 35,11 33,8 C38,14 39,22 35,28 C38,26 39,22 37,19
+      C41,25 40,33 35,38 C32,42 28,44 24,44 C19,44 15,42 12,38 C7,33 7,25 11,19
+      C9,22 10,26 13,28 C9,22 10,14 15,8 C13,11 14,16 18,20 C16,13 21,11 25,7 Z" fill="${c2}"/>
+    <path d="M24,11 C26,15 30,17 28,23 C32,19 32,15 30,12 C35,17 35,25 31,30 C34,28 34,24 33,21
+      C36,26 35,33 31,37 C29,40 27,42 24,42 C21,42 18,40 16,37 C12,33 12,26 15,21
+      C14,24 14,28 17,30 C13,25 13,17 18,12 C16,15 16,19 20,23 C18,17 22,15 24,11 Z" fill="${c3}"/>
+    <path d="M24,17 C25,21 28,23 27,28 C30,25 29,21 28,18 C32,22 31,29 28,33 C30,31 30,27 29,25
+      C31,29 30,35 27,38 C26,40 25,41 24,41 C23,41 22,40 21,38 C18,35 17,29 19,25
+      C18,27 18,31 20,33 C17,29 16,22 20,18 C19,21 19,25 22,28 C21,23 23,21 24,17 Z" fill="${c4}"/>
+    <path d="M24,26 C25,28 27,30 26,33 C28,31 28,28 27,26 C29,28 29,32 27,35 C26,37 25,38 24,38
+      C23,38 22,37 21,35 C19,32 19,28 21,26 C20,28 20,31 22,33 C21,30 23,28 24,26 Z" fill="${c5}"/>
+    ${dots(n)}
+  </svg>`;
+}
+
+function waterSVG(n, color) {
+  const palettes = {
+    red:    ['#2a0a0a','#6a1010','#b82020','#e05050','#ffa0a0'],
+    blue:   ['#0a1f30','#0e4272','#1a72b8','#3aaee0','#a0e8ff'],
+    green:  ['#0a2a12','#0f4a20','#1a7a35','#2db84e','#a0ffb8'],
+    yellow: ['#2a1a00','#5a3a00','#9a6a00','#d4a020','#fff0a0'],
+  };
+  const [c1,c2,c3,c4,c5] = palettes[color]||palettes.blue;
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <path d="M24,2 C24,2 4,26 4,34 C4,43 13,47 24,47 C35,47 44,43 44,34 C44,26 24,2 24,2 Z" fill="${c1}"/>
+    <path d="M24,6 C24,6 7,27 7,34 C7,42 14.5,45 24,45 C33.5,45 41,42 41,34 C41,27 24,6 24,6 Z" fill="${c2}"/>
+    <path d="M24,11 C24,11 10,29 10,35 C10,41 16.5,44 24,44 C31.5,44 38,41 38,35 C38,29 24,11 24,11 Z" fill="${c3}"/>
+    <path d="M24,18 C24,18 14,31 14,36 C14,41 18.5,43 24,43 C29.5,43 34,41 34,36 C34,31 24,18 24,18 Z" fill="${c4}"/>
+    <path d="M24,26 C24,26 19,33 19,36 C19,39 21.2,41 24,41 C26.8,41 29,39 29,36 C29,33 24,26 24,26 Z" fill="${c5}"/>
+    ${dots(n)}
+  </svg>`;
+}
+
+function earthSVG(n, color) {
+  const palettes = {
+    red:    {o:'#2a0a0a',l1:'#6a1010',l2:'#b82020',l3:'#e05050',top:'#ffa0a0',core:'#ffe0e0',ls:'#e06060',rs:'#c04040'},
+    blue:   {o:'#0a1f30',l1:'#0e4272',l2:'#1a72b8',l3:'#3aaee0',top:'#80d4f8',core:'#c0f0ff',ls:'#60c0e8',rs:'#2090c8'},
+    green:  {o:'#0a2a12',l1:'#0f4a20',l2:'#1a7a35',l3:'#2db84e',top:'#60e880',core:'#c0ffcc',ls:'#80d890',rs:'#40a850'},
+    yellow: {o:'#2a1a00',l1:'#5a3a00',l2:'#9a6a00',l3:'#d4a020',top:'#f8d860',core:'#fff8b0',ls:'#e8c040',rs:'#c09020'},
+  };
+  const p = palettes[color]||palettes.green;
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="10,2 38,2 46,14 24,47 2,14"    fill="${p.o}"/>
+    <polygon points="11,4 37,4 44,14 24,44 4,14"    fill="${p.l1}"/>
+    <polygon points="13,6 35,6 42,14 24,41 6,14"    fill="${p.l2}"/>
+    <polygon points="15,8 33,8 39,15 24,38 9,15"    fill="${p.l3}"/>
+    <polygon points="17,10 31,10 36,16 24,16 12,16" fill="${p.top}"/>
+    <polygon points="20,11 28,11 31,16 24,16 17,16" fill="${p.core}"/>
+    <polygon points="9,15 17,10 24,16"  fill="${p.ls}" opacity=".5"/>
+    <polygon points="39,15 31,10 24,16" fill="${p.rs}" opacity=".35"/>
+    ${dots(n)}
+  </svg>`;
+}
+
+function airSVG(n, color) {
+  const palettes = {
+    red:    ['#2a0a0a','#6a1010','#b82020','#e05050','#ffa0a0'],
+    blue:   ['#0a1f30','#0e4272','#1a72b8','#3aaee0','#a0e8ff'],
+    green:  ['#0a2a12','#0f4a20','#1a7a35','#2db84e','#a0ffb8'],
+    yellow: ['#4a3200','#8a5e00','#d49000','#f8c830','#fff4a0'],
+  };
+  const layerFills = palettes[color]||palettes.yellow;
+  const bands = [{y:11,h:9},{y:24,h:9},{y:37,h:9}];
+  let paths='';
+  for(const {y,h} of bands){
+    layerFills.forEach((fill,i)=>{
+      const shrink=i*0.8, hh=Math.max(1,h-shrink*2);
+      const x0=4+shrink, x1=44-shrink*0.5;
+      paths+=`<path d="M ${x0},${y-hh/2} C ${x0-4+shrink},${y-hh/2} ${x0-4+shrink},${y+hh/2} ${x0},${y+hh/2}
+        C ${x0+8},${y+hh/2} ${x1-4},${y+0.5} ${x1},${y} C ${x1-4},${y-0.5} ${x0+8},${y-hh/2} ${x0},${y-hh/2} Z"
+        fill="${fill}"/>`;
+    });
+  }
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">${paths}${dots(n)}</svg>`;
+}
+
+function cardSVG(card) {
+  const n=card.number, c=card.color;
+  if(card.shape==='fire')  return fireSVG(n,c);
+  if(card.shape==='water') return waterSVG(n,c);
+  if(card.shape==='earth') return earthSVG(n,c);
+  if(card.shape==='air')   return airSVG(n,c);
+  return '';
+}
+
+function jokerSVG() {
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="24" cy="24" r="20" fill="none" stroke="#e2b96f" stroke-width="2.5"/>
+    <text x="24" y="31" text-anchor="middle" font-size="24" fill="#e2b96f" font-family="serif">★</text>
+  </svg>`;
+}
+
+function jokerAsSVG(shape, color, number) {
+  const base = cardSVG({shape, color, number});
+  const badge = `<circle cx="38" cy="10" r="8" fill="#2a2a1e" stroke="#e2b96f" stroke-width="1.5"/>
+    <text x="38" y="14" text-anchor="middle" font-size="10" fill="#e2b96f" font-family="serif">★</text>`;
+  return base.replace('</svg>', badge + '</svg>');
+}
+
+// ── STATE ──
+let state = {};
+
+function createDeck() {
+  const deck = [];
+  for (const color of COLORS)
+    for (const shape of SHAPES)
+      for (const number of NUMBERS)
+        deck.push({ color, shape, number, isJoker:false, id:`${color}-${shape}-${number}` });
+  deck.push({ isJoker:true, id:'joker-1' });
+  deck.push({ isJoker:true, id:'joker-2' });
+  return shuffle(deck);
+}
+
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function startGame(numPlayers) {
+  const deck = createDeck();
+  const hands = [];
+  for(let i=0;i<numPlayers;i++) hands.push(deck.splice(0,4));
+  // Draw start card — must not be a Joker
+  let startIdx = deck.findIndex(c => !c.isJoker);
+  const startCard = deck.splice(startIdx, 1)[0];
+  const board = {'0,0': startCard};
+  state = {
+    deck, hands, board,
+    numPlayers,
+    scores: Array(numPlayers).fill(0),
+    currentPlayer: 0,
+    pendingPlacements: [],
+    selectedHandIdx: null,
+    passingMode: false,
+    swapSelected: [],
+    _centered: false,
+  };
+  renderScoresBar();
+  showScreen('game');
+  renderGame();
+}
+
+function renderScoresBar() {
+  const bar = document.getElementById('scoresBar');
+  bar.innerHTML = '';
+  for(let i=0;i<state.numPlayers;i++){
+    const div = document.createElement('div');
+    div.className = 'score-item';
+    div.id = `score${i}`;
+    div.innerHTML = `<div class="score-label">P${i+1}</div><div class="score-val" id="scoreVal${i}">0</div>`;
+    bar.appendChild(div);
+  }
+}
+
+// ── SCREENS / MODES ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setMode(mode) {
+  document.getElementById('modePlay').style.display = mode==='play' ? 'block':'none';
+  document.getElementById('modeSwap').style.display = mode==='swap' ? 'block':'none';
+  document.getElementById('modeNext').style.display = mode==='next' ? 'block':'none';
+}
+
+// ── RENDER ──
+function renderGame() {
+  const p = state.currentPlayer;
+  for(let i=0;i<state.numPlayers;i++){
+    document.getElementById(`scoreVal${i}`).textContent = state.scores[i];
+    document.getElementById(`score${i}`).classList.toggle('active-player', i===p);
+  }
+  document.getElementById('deckCount').textContent = state.deck.length;
+  document.getElementById('turnLabel').textContent = `Player ${p+1}'s Turn`;
+  document.getElementById('turnHint').textContent  = 'Tap a card, then tap the board';
+  clearMsg();
+
+  renderBoard();
+
+  if (state.passingMode) {
+    setMode('swap');
+    renderSwapHand();
+  } else {
+    setMode('play');
+    renderHand();
+    document.getElementById('playBtn').disabled = state.pendingPlacements.length === 0;
+  }
+}
+
+function renderBoard() {
+  const board = state.board;
+  // Include pending placements in bounds so the full line extent is visible
+  const allKeys=[...Object.keys(board),...state.pendingPlacements.map(p=>`${p.col},${p.row}`)];
+  let minC=0,maxC=0,minR=0,maxR=0;
+  allKeys.forEach(k=>{ const[c,r]=k.split(',').map(Number); minC=Math.min(minC,c);maxC=Math.max(maxC,c);minR=Math.min(minR,r);maxR=Math.max(maxR,r); });
+  minC--;maxC++;minR--;maxR++;
+
+  const CELL=54, cols=maxC-minC+1, rows=maxR-minR+1;
+  const boardEl = document.getElementById('board');
+  const wrap    = document.getElementById('boardWrap');
+  const boardW  = cols*CELL, boardH = rows*CELL;
+
+  boardEl.style.gridTemplateColumns = `repeat(${cols},${CELL}px)`;
+  boardEl.style.gridTemplateRows    = `repeat(${rows},${CELL}px)`;
+  boardEl.style.width  = `${boardW}px`;
+  boardEl.style.height = `${boardH}px`;
+  boardEl.style.left   = `${Math.max(0,(wrap.clientWidth -boardW)/2)}px`;
+  boardEl.style.top    = `${Math.max(0,(wrap.clientHeight-boardH)/2)}px`;
+  boardEl.innerHTML    = '';
+
+  for(let r=minR;r<=maxR;r++) {
+    for(let c=minC;c<=maxC;c++) {
+      const cell = document.createElement('div');
+      cell.className = 'board-cell';
+      const existing = board[`${c},${r}`];
+      const pending  = state.pendingPlacements.find(p=>p.col===c&&p.row===r);
+
+      if (existing) {
+        cell.appendChild(mkCard(existing, true));
+      } else if (pending) {
+        const el = mkCard(pending.card, true);
+        el.style.opacity = '.75';
+        el.style.borderColor = 'var(--accent)';
+        const rm = document.createElement('div');
+        rm.className='rm-btn'; rm.textContent='✕';
+        rm.addEventListener('click', e=>{ e.stopPropagation(); removePending(c,r); });
+        el.appendChild(rm);
+        cell.appendChild(el);
+      } else if (!state.passingMode && isDropTarget(c,r)) {
+        const dt = document.createElement('div');
+        dt.className = 'drop-target';
+        dt.addEventListener('click', ()=>handleDrop(c,r));
+        cell.appendChild(dt);
+      }
+      boardEl.appendChild(cell);
+    }
+  }
+
+  if (!state._centered) {
+    setTimeout(()=>{ wrap.scrollLeft=(boardW-wrap.clientWidth)/2; wrap.scrollTop=(boardH-wrap.clientHeight)/2; },0);
+    state._centered = true;
+  }
+}
+
+function isDropTarget(c,r) {
+  const all=allMap();
+  if(all[`${c},${r}`]) return false;
+
+  const pp=state.pendingPlacements;
+
+  // No cards placed yet this turn: must be adjacent to a committed board card
+  if(pp.length===0){
+    return [[c-1,r],[c+1,r],[c,r-1],[c,r+1]].some(([nc,nr])=>state.board[`${nc},${nr}`]);
+  }
+
+  // Determine the established line direction from pending placements
+  const pCols=pp.map(p=>p.col), pRows=pp.map(p=>p.row);
+  const allSameRow=new Set(pRows).size===1;
+  const allSameCol=new Set(pCols).size===1;
+
+  if(allSameRow && allSameCol){
+    // Only one pending card so far — both axes still open
+    const p0=pp[0];
+    if(r===p0.row) return isOnLineExtent(all,c,r,true);
+    if(c===p0.col) return isOnLineExtent(all,c,r,false);
+    return false;
+  }
+  if(allSameRow){
+    if(r!==pRows[0]) return false;
+    return isOnLineExtent(all,c,r,true);
+  }
+  if(allSameCol){
+    if(c!==pCols[0]) return false;
+    return isOnLineExtent(all,c,r,false);
+  }
+  return false;
+}
+
+// A cell (c,r) is a valid drop target on a line if:
+// 1. It is immediately at either end of the contiguous block that includes the pending cards
+// 2. That contiguous block touches at least one committed board card
+//
+// "Contiguous block" = the run of consecutive occupied cells that contains
+// at least one pending placement. Board cards with gaps elsewhere on the
+// same line are part of separate segments and don't affect this block.
+function isOnLineExtent(all,c,r,horiz){
+  const pos = horiz ? c : r;
+
+  // Find any pending card on this line to anchor the contiguous block
+  const anchor = state.pendingPlacements.find(p => horiz ? p.row===r : p.col===c);
+  if(!anchor) return false;
+  const anchorPos = horiz ? anchor.col : anchor.row;
+
+  // Expand from the anchor to find the contiguous block of occupied cells
+  let segMn = anchorPos, segMx = anchorPos;
+  while(all[horiz ? `${segMn-1},${r}` : `${c},${segMn-1}`]) segMn--;
+  while(all[horiz ? `${segMx+1},${r}` : `${c},${segMx+1}`]) segMx++;
+
+  // Target must be immediately outside either end of this block
+  if(pos !== segMn-1 && pos !== segMx+1) return false;
+
+  // Block must touch at least one committed board card
+  for(let i=segMn; i<=segMx; i++){
+    const key = horiz ? `${i},${r}` : `${c},${i}`;
+    if(state.board[key]) return true;
+  }
+  return false;
+}
+
+function allMap() {
+  const m={...state.board};
+  state.pendingPlacements.forEach(p=>{ m[`${p.col},${p.row}`]=p.card; });
+  return m;
+}
+
+function mkCard(card, isBoard=false) {
+  const el=document.createElement('div');
+  el.className=`card${isBoard?' board-card':''}${card.isJoker?' joker-card':''}`;
+  if(!card.isJoker){
+    el.style.background = COLOR_BG[card.color] || '#1e1e3a';
+    el.style.borderColor = COLOR_BORDER[card.color] || '#3a3a5c';
+  }
+  if(card.isJoker && card.jokerAs){
+    el.innerHTML=jokerAsSVG(card.jokerAs.shape, card.jokerAs.color, card.jokerAs.number);
+  } else {
+    el.innerHTML=card.isJoker ? jokerSVG() : cardSVG(card);
+  }
+  return el;
+}
+
+function renderHand() {
+  const area=document.getElementById('handArea');
+  area.innerHTML='';
+  state.hands[state.currentPlayer].forEach((card,idx)=>{
+    if(state.pendingPlacements.find(p=>p.handIdx===idx)) return;
+    const el=mkCard(card);
+    el.addEventListener('click',()=>selectCard(idx));
+    if(state.selectedHandIdx===idx) el.classList.add('selected');
+    area.appendChild(el);
+  });
+}
+
+function renderSwapHand() {
+  const area=document.getElementById('swapHand');
+  area.innerHTML='';
+  state.hands[state.currentPlayer].forEach((card,idx)=>{
+    const el=mkCard(card);
+    if(state.swapSelected.includes(idx)) el.classList.add('selected');
+    el.addEventListener('click',()=>{
+      state.swapSelected=state.swapSelected.includes(idx)
+        ?state.swapSelected.filter(i=>i!==idx)
+        :[...state.swapSelected,idx];
+      renderSwapHand();
+    });
+    area.appendChild(el);
+  });
+  const btn=document.getElementById('swapBtn');
+  if(btn) btn.textContent=state.swapSelected.length>0?'Confirm Swap':'Confirm Pass';
+}
+
+function renderHiddenHand(count) {
+  const area=document.getElementById('hiddenPlaceholder');
+  area.innerHTML='';
+  for(let i=0;i<count;i++){const el=document.createElement('div');el.className='card-back';area.appendChild(el);}
+}
+
+// ── INTERACTIONS ──
+function selectCard(idx) {
+  state.selectedHandIdx=(state.selectedHandIdx===idx)?null:idx;
+  renderHand(); clearMsg();
+}
+
+function handleDrop(c,r) {
+  if(state.selectedHandIdx==null){ setMsg('Select a card from your hand first.','error'); return; }
+  const card=state.hands[state.currentPlayer][state.selectedHandIdx];
+  const handIdx=state.selectedHandIdx;
+  const err=validatePlacement(card,c,r);
+  if(err){ setMsg(err,'error'); return; }
+
+  // If a Joker, resolve and store its identity now
+  let placedCard = card;
+  if(card.isJoker){
+    const testMap={...state.board};
+    state.pendingPlacements.forEach(p=>{testMap[`${p.col},${p.row}`]=p.card;});
+    testMap[`${c},${r}`]=card;
+    const hRow=rowFromMap(testMap,c,r,true);
+    const vRow=rowFromMap(testMap,c,r,false);
+    const identity=resolveJokerIdentity(hRow,vRow);
+    // Clone the joker card and attach the resolved identity
+    placedCard = {...card, jokerAs: identity};
+  }
+  state.pendingPlacements.push({card:placedCard,col:c,row:r,handIdx});
+  state.selectedHandIdx=null;
+  clearMsg();
+  renderGame();
+}
+
+function removePending(c,r) {
+  state.pendingPlacements=state.pendingPlacements.filter(p=>!(p.col===c&&p.row===r));
+  renderGame();
+}
+
+// ── PLAY (per spec: Play hides cards) ──
+function confirmPlay() {
+  if(state.pendingPlacements.length===0){ setMsg('Place at least one card.','error'); return; }
+  const err=validateAllPlacements();
+  if(err){ setMsg(err,'error'); return; }
+
+  const pts=calcTurnPoints();
+  state.scores[state.currentPlayer]+=pts;
+
+  // Commit to board
+  state.pendingPlacements.forEach(p=>{ state.board[`${p.col},${p.row}`]=p.card; });
+
+  // Re-resolve any board Jokers adjacent to newly placed cards, now that their
+  // row context may have changed (a second row was formed next to them).
+  const updatedKeys = new Set(state.pendingPlacements.map(p=>`${p.col},${p.row}`));
+  for(const {col,row} of state.pendingPlacements) {
+    for(const [nc,nr] of [[col-1,row],[col+1,row],[col,row-1],[col,row+1]]) {
+      const key=`${nc},${nr}`;
+      const neighbor=state.board[key];
+      if(neighbor?.isJoker && !updatedKeys.has(key)) {
+        // Re-resolve this joker's identity with its full updated context
+        const hRow=rowFromMap(state.board,nc,nr,true);
+        const vRow=rowFromMap(state.board,nc,nr,false);
+        const identity=resolveJokerIdentity(hRow,vRow);
+        state.board[key]={...neighbor, jokerAs: identity};
+      }
+    }
+  }
+  // Remove from hand
+  state.pendingPlacements.map(p=>p.handIdx).sort((a,b)=>b-a).forEach(idx=>state.hands[state.currentPlayer].splice(idx,1));
+  // Draw up to 4
+  while(state.hands[state.currentPlayer].length<4&&state.deck.length>0)
+    state.hands[state.currentPlayer].push(state.deck.shift());
+
+  state.pendingPlacements=[];
+  state.selectedHandIdx=null;
+
+  if(state.deck.length===0&&state.hands[state.currentPlayer].length===0){ showEndScreen(); return; }
+
+  // Per spec: hide cards, show Next Player button
+  hideThenNext(pts);
+}
+
+function doPass() {
+  // Clear any cards placed this turn before entering swap mode
+  state.pendingPlacements=[];
+  state.selectedHandIdx=null;
+  state.passingMode=true;
+  state.swapSelected=[];
+  renderGame();
+}
+
+function confirmPass() {
+  const hand=state.hands[state.currentPlayer];
+  const toSwap=[...state.swapSelected].sort((a,b)=>b-a);
+  const removed=toSwap.map(idx=>hand.splice(idx,1)[0]);
+  state.deck.push(...removed);
+  while(hand.length<4&&state.deck.length>0) hand.push(state.deck.shift());
+  state.passingMode=false; state.swapSelected=[];
+  hideThenNext(0);
+}
+
+function hideThenNext(pts) {
+  const next=(state.currentPlayer+1)%state.numPlayers;
+
+  // Refresh scores + board (committed state, no pending)
+  for(let i=0;i<state.numPlayers;i++){
+    document.getElementById(`scoreVal${i}`).textContent=state.scores[i];
+    document.getElementById(`score${i}`).classList.toggle('active-player',i===state.currentPlayer);
+  }
+  document.getElementById('deckCount').textContent=state.deck.length;
+  renderBoard();
+
+  // Update header
+  document.getElementById('turnLabel').textContent=`Player ${next+1}'s Turn`;
+  document.getElementById('turnHint').textContent=
+    pts>0 ? `Player ${state.currentPlayer+1} scored ${pts} pts` : `Player ${state.currentPlayer+1} passed`;
+
+  // Show hidden placeholders + Next Player button
+  renderHiddenHand(state.hands[state.currentPlayer].length);
+  setMode('next');
+  clearMsg();
+}
+
+function nextPlayer() {
+  state.currentPlayer=(state.currentPlayer+1)%state.numPlayers;
+  state._centered=true; // keep board position
+  renderGame();
+}
+
+// ── VALIDATION ──
+function validatePlacement(card,col,row) {
+  const all=allMap();
+
+  // Cell must be empty
+  if(all[`${col},${row}`]) return 'Cell already occupied.';
+
+  // All pending + new card must be in a single straight line
+  const newP=[...state.pendingPlacements,{card,col,row}];
+  if(newP.length>1){
+    const cs=newP.map(p=>p.col),rs=newP.map(p=>p.row);
+    if(new Set(rs).size>1&&new Set(cs).size>1) return 'All cards must be in a single straight line.';
+  }
+
+  // Build test map with this card included
+  const testMap={...state.board};
+  newP.forEach(p=>{testMap[`${p.col},${p.row}`]=p.card;});
+
+  // The played segment must be contiguous (no gaps within the line)
+  const horiz = newP.length===1 ? null : new Set(newP.map(p=>p.row)).size===1;
+  if(horiz!==null){
+    const err=checkSegmentContiguous(newP,horiz);
+    if(err) return err;
+  }
+
+  // The line (board + pending) must touch at least one committed board card
+  if(!lineConnectsToBoard(testMap,col,row)){
+    return 'The line must connect to an existing card on the board.';
+  }
+
+  // Row validity checks
+  const hRow=rowFromMap(testMap,col,row,true);
+  if(hRow.length>4) return 'A row can have at most 4 cards (4-Tuple).';
+  if(hRow.length>1&&!isValidRow(hRow)) return 'Invalid row — each property must be all-same or all-different.';
+
+  const vRow=rowFromMap(testMap,col,row,false);
+  if(vRow.length>4) return 'A column can have at most 4 cards (4-Tuple).';
+  if(vRow.length>1&&!isValidRow(vRow)) return 'Invalid column — each property must be all-same or all-different.';
+
+  // Intersection check for the placed card itself
+  if(!cardSatisfiesBothRows(card, hRow, vRow))
+    return 'This card cannot satisfy both the horizontal and vertical row simultaneously.';
+
+  // Also check every board Joker in these rows: now that new cards are being added,
+  // the Joker's fixed identity must still be compatible with the updated rows.
+  const err = checkBoardJokersStillValid(testMap, hRow, vRow, col, row);
+  if(err) return err;
+
+  return null;
+}
+
+// When new cards are placed adjacent to an existing board Joker, verify that the
+// Joker's already-fixed identity is still compatible with the updated rows.
+// If the Joker has no jokerAs yet (was placed alone), try to resolve it now.
+function checkBoardJokersStillValid(testMap, hRow, vRow, newCol, newRow) {
+  // Collect all Jokers in the affected rows (excluding the cell just placed)
+  const jokersToCheck = new Set();
+  for(const card of [...hRow, ...vRow]) {
+    if(card._boardKey && card._boardKey !== `${newCol},${newRow}`) {
+      jokersToCheck.add(card._boardKey);
+    }
+  }
+
+  // Find board Jokers in hRow and vRow by scanning the testMap
+  const allAffectedKeys = new Set();
+  for(let c = newCol-4; c <= newCol+4; c++) {
+    const k = `${c},${newRow}`;
+    if(testMap[k]?.isJoker) allAffectedKeys.add(k);
+  }
+  for(let r = newRow-4; r <= newRow+4; r++) {
+    const k = `${newCol},${r}`;
+    if(testMap[k]?.isJoker) allAffectedKeys.add(k);
+  }
+
+  for(const key of allAffectedKeys) {
+    if(key === `${newCol},${newRow}`) continue; // skip the card being placed now
+    const joker = testMap[key];
+    if(!joker || !joker.isJoker) continue;
+    // Only check jokers that are already committed to the board
+    if(!state.board[key]) continue;
+
+    const [jc, jr] = key.split(',').map(Number);
+    const jokerHRow = rowFromMap(testMap, jc, jr, true);
+    const jokerVRow = rowFromMap(testMap, jc, jr, false);
+
+    if(joker.jokerAs) {
+      // Joker has a fixed identity — verify it still satisfies both rows
+      const identity = joker.jokerAs;
+      const hReal = jokerHRow.filter(c=>!c.isJoker);
+      const vReal = jokerVRow.filter(c=>!c.isJoker);
+      const asCard = {...identity, isJoker:false};
+      const hOk = hReal.length<=1 ? true : isValidRow(hReal.map(c=>c===joker?asCard:c));
+      const vOk = vReal.length<=1 ? true : isValidRow(vReal.map(c=>c===joker?asCard:c));
+      if(!hOk || !vOk) {
+        return `A card conflicts with the Joker's fixed identity (${identity.color} ${identity.shape} ${identity.number}).`;
+      }
+    } else {
+      // Joker has no fixed identity yet — check a valid one exists for both rows
+      if(!cardSatisfiesBothRows(joker, jokerHRow, jokerVRow)) {
+        return 'This card conflicts with an existing Joker — no valid identity satisfies both rows.';
+      }
+    }
+  }
+  return null;
+}
+
+// Finds and returns the specific identity a Joker must represent given its row context.
+// Returns {color,shape,number} if a unique or first valid identity is found, else null.
+function resolveJokerIdentity(hRow, vRow) {
+  const hReal = hRow.filter(c=>!c.isJoker);
+  const vReal = vRow.filter(c=>!c.isJoker);
+  const hIds  = new Set(hReal.map(c=>`${c.color}-${c.shape}-${c.number}`));
+  const vIds  = new Set(vReal.map(c=>`${c.color}-${c.shape}-${c.number}`));
+
+  for(const color of ['red','blue','green','yellow']) {
+    for(const shape of ['circle','cross','triangle','square']) {
+      for(const number of [1,2,3,4]) {
+        const cid=`${color}-${shape}-${number}`;
+        if(hIds.has(cid)||vIds.has(cid)) continue;
+        const candidate={color,shape,number,isJoker:false};
+        const hOk = hReal.length===0 || isValidRow([...hReal,candidate]);
+        const vOk = vReal.length===0 || isValidRow([...vReal,candidate]);
+        if(hOk && vOk) return {color,shape,number};
+      }
+    }
+  }
+  return null;
+}
+
+// Returns true if 'card' (or any valid identity for a Joker) satisfies both rows.
+// hRow and vRow already include the card being placed (possibly as the only card).
+// A length-1 row imposes no row constraint by itself, but the identity chosen must
+// still be compatible with whatever the other row requires.
+function cardSatisfiesBothRows(card, hRow, vRow) {
+  if(!card.isJoker) {
+    // Regular card: check it's valid in both rows (length-1 rows are trivially valid)
+    return isValidRow(hRow) && isValidRow(vRow);
+  }
+
+  // Joker: find any identity that satisfies both rows simultaneously.
+  const hReal = hRow.filter(c=>!c.isJoker);
+  const vReal = vRow.filter(c=>!c.isJoker);
+  const hIds  = new Set(hReal.map(c=>`${c.color}-${c.shape}-${c.number}`));
+  const vIds  = new Set(vReal.map(c=>`${c.color}-${c.shape}-${c.number}`));
+
+  for(const color of ['red','blue','green','yellow']) {
+    for(const shape of ['circle','cross','triangle','square']) {
+      for(const number of [1,2,3,4]) {
+        const cid = `${color}-${shape}-${number}`;
+        if(hIds.has(cid)||vIds.has(cid)) continue;
+        const candidate = {color,shape,number,isJoker:false};
+        // For a length-1 row the candidate just needs to not duplicate existing cards
+        const hOk = hReal.length===0 ? true : isValidRow([...hReal,candidate]);
+        const vOk = vReal.length===0 ? true : isValidRow([...vReal,candidate]);
+        if(hOk && vOk) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Check that pending placements form a contiguous segment (no internal gaps)
+function checkSegmentContiguous(placements,horiz){
+  const positions=placements.map(p=>horiz?p.col:p.row);
+  const mn=Math.min(...positions),mx=Math.max(...positions);
+  const all=allMap();
+  for(let i=mn;i<=mx;i++){
+    const inPending=placements.some(p=>(horiz?p.col:p.row)===i);
+    if(inPending) continue;
+    // Must be a committed board card filling the gap
+    const ref=placements[0];
+    const key=horiz?`${i},${ref.row}`:`${ref.col},${i}`;
+    if(!all[key]) return 'Played cards must form a contiguous line (no gaps).';
+  }
+  return null;
+}
+
+// Check the full line (board + pending) through (col,row) touches at least one board card
+function lineConnectsToBoard(testMap,col,row){
+  // Check both axes — at least one must touch a committed board card
+  for(const horiz of[true,false]){
+    const cells=[];
+    if(horiz){let c=col;while(testMap[`${c},${row}`])c--;c++;while(testMap[`${c},${row}`]){cells.push(`${c},${row}`);c++;}}
+    else{let r=row;while(testMap[`${col},${r}`])r--;r++;while(testMap[`${col},${r}`]){cells.push(`${col},${r}`);r++;}}
+    if(cells.some(k=>state.board[k])) return true;
+  }
+  return false;
+}
+
+function validateAllPlacements() {
+  if(state.pendingPlacements.length===0) return null;
+  if(state.pendingPlacements.length>1){
+    const cs=state.pendingPlacements.map(p=>p.col),rs=state.pendingPlacements.map(p=>p.row);
+    if(new Set(rs).size>1&&new Set(cs).size>1) return 'All played cards must be in a single row.';
+    // Check contiguous
+    const horiz=new Set(rs).size===1;
+    const err=checkSegmentContiguous(state.pendingPlacements,horiz);
+    if(err) return err;
+  }
+  return null;
+}
+
+function rowFromMap(map,col,row,horiz) {
+  const cards=[];
+  if(horiz){
+    let c=col;
+    while(map[`${c},${row}`]) c--;
+    c++;
+    while(map[`${c},${row}`]){ cards.push(map[`${c},${row}`]); c++; }
+  } else {
+    let r=row;
+    while(map[`${col},${r}`]) r--;
+    r++;
+    while(map[`${col},${r}`]){ cards.push(map[`${col},${r}`]); r++; }
+  }
+  return cards;
+}
+
+function isValidRow(cards) {
+  // Treat Jokers with a resolved identity as their identity for validation
+  const effective = cards.map(c => (c.isJoker && c.jokerAs) ? {...c.jokerAs, isJoker:false} : c);
+  const real = effective.filter(c=>!c.isJoker);
+  for(const prop of['color','shape','number']){
+    const vals=real.map(c=>c[prop]),unique=[...new Set(vals)];
+    if(unique.length>1&&unique.length<vals.length) return false;
+  }
+  const ids=real.map(c=>`${c.color}-${c.shape}-${c.number}`);
+  return ids.length===new Set(ids).size;
+}
+
+// ── SCORING ──
+function calcTurnPoints() {
+  const all={...state.board};
+  state.pendingPlacements.forEach(p=>{all[`${p.col},${p.row}`]=p.card;});
+  let total=0,tupleCount=0;
+  const seen=new Set();
+  state.pendingPlacements.forEach(({col,row})=>{
+    for(const horiz of[true,false]){
+      const cards=rowFromMap(all,col,row,horiz);
+      if(cards.length<2) continue;
+      const key=(horiz?`h${row}`:`v${col}`)+cards.map(c=>c.id||`${c.color}${c.shape}${c.number}`).join(',');
+      if(seen.has(key)) continue;
+      seen.add(key);
+      total+=cards.reduce((s,c)=>s+(c.isJoker?0:c.number),0);
+      if(cards.length===4) tupleCount++;
+    }
+  });
+  for(let i=0;i<tupleCount;i++) total*=2;
+  if(state.pendingPlacements.length===4) total*=2;
+  const isLast=state.deck.length===0&&state.hands[state.currentPlayer].length===state.pendingPlacements.length;
+  if(isLast) total*=2;
+  return total;
+}
+
+// ── END ──
+function showEndScreen() {
+  const sc=state.scores;
+  const maxScore=Math.max(...sc);
+  const winners=sc.map((s,i)=>s===maxScore?i:-1).filter(i=>i>=1);
+  const winnerIdxs=sc.reduce((acc,s,i)=>{if(s===maxScore)acc.push(i);return acc;},[]);
+  const container=document.getElementById('finalScores');
+  container.innerHTML='';
+  // Sort by score descending
+  const order=[...Array(state.numPlayers).keys()].sort((a,b)=>sc[b]-sc[a]);
+  for(const i of order){
+    const isWinner=sc[i]===maxScore&&winnerIdxs.length===1&&i===winnerIdxs[0];
+    const isTied=sc[i]===maxScore&&winnerIdxs.length>1;
+    const div=document.createElement('div');
+    div.className=`final-score-item${(isWinner||isTied)?' winner':''}`;
+    div.innerHTML=`${isWinner?'<div class="crown">👑</div>':isTied?'<div class="crown">🤝</div>':''}<div class="name">Player ${i+1}</div><div class="pts">${sc[i]}</div>`;
+    container.appendChild(div);
+  }
+  if(winnerIdxs.length===1){
+    document.getElementById('winnerMsg').textContent=`Player ${winnerIdxs[0]+1} Wins!`;
+  } else {
+    document.getElementById('winnerMsg').textContent=`It's a Tie!`;
+  }
+  showScreen('endscreen');
+}
+
+// ── HELPERS ──
+function setMsg(text,type=''){const el=document.getElementById('msgBar');el.textContent=text;el.className=`msg-bar${type?' '+type:''}`;}
+function clearMsg(){setMsg('');}
+
+function showRules(){
+  alert('4Tuples — Rules\n\n• Each player holds 4 cards.\n• Play 1–4 cards onto a single row, OR pass and swap some cards.\n• Played cards must be in one straight line, adjacent to existing cards.\n• Each card has 3 properties: element (🔥💧💎💨), color (red/blue/green/yellow), number (1–4).\n• In every row each property must be ALL SAME or ALL DIFFERENT.\n• A row of 4 = 4-TUPLE → doubles your turn score. Multiple 4-Tuples keep doubling.\n• Playing all 4 hand cards → doubles score too.\n• Game ends when deck is empty and a player plays their last card (last turn scores double).\n• Most points wins!');
+}
+
+// Splash demo
+(function(){
+  const demo=document.getElementById('splashDemo');
+  [{color:'red',shape:'fire',number:1},{color:'blue',shape:'water',number:2},{color:'green',shape:'earth',number:3},{color:'yellow',shape:'air',number:4}]
+    .forEach(c=>{
+      const el=document.createElement('div');
+      el.className='card';
+      el.style.background=COLOR_BG[c.color];
+      el.style.borderColor=COLOR_BORDER[c.color];
+      el.innerHTML=cardSVG(c);
+      demo.appendChild(el);
+    });
+})();
+</script>
+</body>
+</html>
